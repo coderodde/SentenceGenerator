@@ -12,7 +12,7 @@ import java.util.List;
  */
 public class SentenceProducer {
     
-    private static final String SPLIT_REGEX = "\\.|\\?|;|!|—";
+    private static final String SPLIT_REGEX = "\\s*(\\.|\\?|;|!|—)\\s*";
     
     private final File file;
     
@@ -22,15 +22,33 @@ public class SentenceProducer {
     
     public List<String> getSentences() throws IOException {
         String allText = Files.readString(file.toPath());
-        String[] sentences = allText.split(SPLIT_REGEX);
+        return splitEntireTextToSentences(allText);
+    }
+    
+    private static List<String> splitEntireTextToSentences(String text) {
+        char[] chars = text.toCharArray();
+        List<String> sentences = new ArrayList<>();
         
-        List<String> sentenceList =
-                new ArrayList<>(sentences.length);
-        
-        for (String sentence : sentences) {
-            sentenceList.add(sentence.trim().toLowerCase());
+        outerLoop:
+        for (int i = 0; i < chars.length; i++) {
+            StringBuilder stringBuilder = new StringBuilder();
+            
+            for (int j = i; j < chars.length; j++, i++) {
+                char ch = chars[j];
+                
+                switch (ch) {
+                    case '.', '?', '!' -> {
+                        stringBuilder.append(ch);
+                        String newSentence = stringBuilder.toString();
+                        sentences.add(newSentence);
+                        continue outerLoop;
+                    }
+                    
+                    default -> stringBuilder.append(ch);
+                }
+            }
         }
         
-        return sentenceList;
+        return sentences;
     }
 }

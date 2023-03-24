@@ -14,38 +14,36 @@ public final class WordProvider {
                 new ArrayList<>(sentences.size());
         
         for (String sentence : sentences) {
-            String[] words = sentence.split("\\s+|,|;|:|\"");
+            List<String> words = splitSentenceToWords(sentence);
             List<String> wordList = new ArrayList<>();
+            boolean addedWord = false;
             
             for (String word : words) {
                 word = cleanWord(word);
                 
                 if (word == null) {
                     continue;
+                } 
+                
+                if (word.isBlank()) {
+                    continue;
                 }
                 
-                if (word.endsWith("!!!")) {
-                    wordList.add("!!!");
-                    
-                    if (word.length() > 3) {
-                        wordList.add(
-                                word.substring(
-                                        0,
-                                        word.length() - 3));
-                    }
-                } else {
-                    char lastChar = word.charAt(word.length() - 1);
-
-                    switch (lastChar) {
-                        case '.' -> wordList.add(".");
-                        case '?' -> wordList.add("?");
-                        case '!' -> wordList.add("!");
-                        default  -> wordList.add(word);
-                    }
-                }
+                wordList.add(word);
+                addedWord = true;
             }
             
-            returnList.add(wordList);
+            if (addedWord) {
+                char lastChar = sentence.charAt(sentence.length() - 1);
+
+                switch (lastChar) {
+                    case '.' -> wordList.add(".");
+                    case '?' -> wordList.add("?");
+                    case '!' -> wordList.add("!");
+                }
+
+                returnList.add(wordList);
+            }
         }
         
         return returnList;
@@ -98,5 +96,27 @@ public final class WordProvider {
         }
         
         return true;
+    }
+    
+    private static List<String> splitSentenceToWords(String sentence) {
+        sentence = sentence.trim();
+        String[] wordArray = sentence.split("\\s+|\\.|,|;|:|\"|\r|\n");
+        List<String> returnArray = 
+                new ArrayList<>(wordArray.length + 1);
+        
+        for (String word : wordArray) {
+            returnArray.add(word);
+        }
+        
+        char lastSentenceCharacter = 
+                sentence.charAt(sentence.length() - 1);
+        
+        switch (lastSentenceCharacter) {
+            case '.' -> returnArray.add(".");
+            case '?' -> returnArray.add("?");
+            case '!' -> returnArray.add("!");
+        }
+        
+        return returnArray;
     }
 }

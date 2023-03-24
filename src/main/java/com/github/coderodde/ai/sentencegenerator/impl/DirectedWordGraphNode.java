@@ -48,7 +48,7 @@ public final class DirectedWordGraphNode
         }
     }
     
-    public DirectedWordGraphNode sampleNext() {
+    public DirectedWordGraphNode sampleParent() {
         if (probabilityDistribution.isEmpty()) {
             return null;
         }

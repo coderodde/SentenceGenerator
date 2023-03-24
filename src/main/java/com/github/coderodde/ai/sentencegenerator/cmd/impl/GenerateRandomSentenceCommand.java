@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 
 /**
  *
@@ -16,22 +17,27 @@ public class GenerateRandomSentenceCommand extends AbstractCommand {
 
     private final List<DirectedWordGraphNode> graph;
     private final Map<String, DirectedWordGraphNode> graphMap;
+    private final Set<String> initialWords;
     private final Random random;
     
     public GenerateRandomSentenceCommand(
             List<DirectedWordGraphNode> graph,
-            Map<String, DirectedWordGraphNode> graphMap,                
+            Map<String, DirectedWordGraphNode> graphMap, 
+            Set<String> initialWords,
             Random random) {
         
         this.graph = graph;
         this.graphMap = graphMap;
+        this.initialWords = initialWords;
         this.random = random;
     }
     
     public GenerateRandomSentenceCommand(
             List<DirectedWordGraphNode> graph,
-            Map<String, DirectedWordGraphNode> graphMap) {
-        this(graph, graphMap, new Random());
+            Map<String, DirectedWordGraphNode> graphMap,
+            Set<String> initialWords) {
+        
+        this(graph, graphMap, initialWords, new Random());
     }
     
     @Override
@@ -53,16 +59,12 @@ public class GenerateRandomSentenceCommand extends AbstractCommand {
         
         int currentSentenceLength = 1;
         
-        DirectedWordGraphNode node = 
-                graph.get(random.nextInt(graph.size()));
-        
+        DirectedWordGraphNode node = graphMap.get(".");
         List<DirectedWordGraphNode> path = new ArrayList<>();
         path.add(node);
         
-        while (isNotTerminalNode(node) 
-                && currentSentenceLength < maximumSentenceLength) {
-            
-            node = node.sampleNext();
+        while (true) {
+            node = node.sampleParent();
             
             if (node == null) {
                 break;
@@ -70,6 +72,22 @@ public class GenerateRandomSentenceCommand extends AbstractCommand {
             
             path.add(node);
             currentSentenceLength++;
+            
+            if (currentSentenceLength >= maximumSentenceLength) {
+                if (initialWords.contains(node.getWord())) {
+                    break;
+                }
+            } else if (initialWords.contains(node.getWord())){
+                double factor = (1.0 * path.size()) / 
+                                (1.0 * maximumSentenceLength);
+                
+                double cutoff = Math.pow(1.0 - factor, 0.1);
+                double coin = random.nextDouble();
+                
+                if (coin > cutoff) {
+                    break;
+                }
+            }
         }
         
         Collections.<DirectedWordGraphNode>reverse(path);
