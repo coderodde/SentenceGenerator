@@ -17,21 +17,18 @@ public final class WordGraphBuilder {
     public static final class Data {
         public final List<DirectedWordGraphNode> graph;
         public final Map<String, DirectedWordGraphNode> graphMap;
-        public final Set<String> initialWords;
         public final int numberOfSentences;
         public final int numberOfDistinctWords;
         public final int numberOfWords;
         
         private Data(List<DirectedWordGraphNode> graph,
                      Map<String, DirectedWordGraphNode> graphMap,
-                     Set<String> initialWords,
                      int numberOfSentences,
                      int numberOfDistinctWords,
                      int numberOfWords) {
             
             this.graph = graph;
             this.graphMap = graphMap;
-            this.initialWords = initialWords;
             this.numberOfSentences = numberOfSentences;
             this.numberOfDistinctWords = numberOfDistinctWords;
             this.numberOfWords = numberOfWords;
@@ -41,8 +38,6 @@ public final class WordGraphBuilder {
     public static Data buildGraph(List<List<String>> sentenceList) {
         Map<String, DirectedWordGraphNode> nodeMap = new HashMap<>();
         List<DirectedWordGraphNode> graph = new ArrayList<>();
-        Set<String> initialWords = 
-                new HashSet<>(sentenceList.size());
         
         int numberOfDistinctWords = 0;
         int numberOfWords = 0;
@@ -68,8 +63,6 @@ public final class WordGraphBuilder {
                 continue;
             }
             
-            initialWords.add(sentence.get(0).trim());
-            
             for (int i = 0; i < sentence.size() - 1; i++) {
                 String word1 = sentence.get(i);
                 String word2 = sentence.get(i + 1);
@@ -86,7 +79,6 @@ public final class WordGraphBuilder {
         
         return new Data(graph,
                         getGraphMap(graph),
-                        initialWords,
                         sentenceList.size(),
                         numberOfDistinctWords, 
                         numberOfWords);

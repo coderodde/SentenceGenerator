@@ -1,13 +1,11 @@
 package com.github.coderodde.ai.sentencegenerator.impl;
  
-import com.github.coderodde.ai.sentencegenerator.AbstractProbabilityDistribution;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Random;
  
-public class BinaryTreeProbabilityDistribution<E>
-extends AbstractProbabilityDistribution<E> {
+public class BinaryTreeProbabilityDistribution<E> {
  
     private static final class Node<E> {
  
@@ -95,16 +93,17 @@ extends AbstractProbabilityDistribution<E> {
  
     private final Map<E, Node<E>> map = new HashMap<>();
     private Node<E> root;
-     
+    private double totalWeight;
+    private final Random random;
+    
     public BinaryTreeProbabilityDistribution() {
         this(new Random());
     }
  
     public BinaryTreeProbabilityDistribution(Random random) {
-        super(random);
+        this.random = random;
     }
  
-    @Override
     public boolean addElement(E element, double weight) {
         checkWeightNotNaNAndIsPositive(weight);
         Node<E> node = map.get(element);
@@ -122,12 +121,10 @@ extends AbstractProbabilityDistribution<E> {
         return true;
     }
  
-    @Override
     public boolean contains(E element) {
         return map.containsKey(element);
     }
  
-    @Override
     public E sampleElement() {
         checkNotEmpty(map.size());
         double value = totalWeight * random.nextDouble();
@@ -144,8 +141,22 @@ extends AbstractProbabilityDistribution<E> {
  
         return node.getElement();
     }
+    
+    public double getTotalWeight() {
+        return totalWeight;
+    }
+    
+    public double getWeight(E element) {
+        Node<E> node = map.get(element);
+        
+        if (node == null) {
+            throw new NoSuchElementException(
+                    "The input element not found in the distribution.");
+        }
+        
+        return node.getWeight();
+    }
      
-    @Override
     public boolean removeElement(E element) {
         Node<E> node = map.remove(element);
  
@@ -158,23 +169,117 @@ extends AbstractProbabilityDistribution<E> {
         return true;
     }
  
-    @Override
     public void clear() {
         root = null;
         map.clear();
         totalWeight = 0.0;
     }
       
-    @Override
     public boolean isEmpty() {
         return map.isEmpty();
     }
  
-    @Override
     public int size() {
         return map.size();
     }
+    
+    public String getEntryString(E element) {
+        Node<E> node = map.get(element);
+        
+        if (node == null) {
+            return null;
+        }
+        
+        StringBuilder stringBuilder = new StringBuilder();
+        double probability = node.getWeight() / totalWeight;
+        stringBuilder.append(element.toString())
+                     .append(", w = ")
+                     .append(node.getWeight())
+                     .append(", p = ")
+                     .append(probability);
+        
+        return stringBuilder.toString();
+    }
      
+    @Override
+    public String toString() {
+        StringBuilder stringBuilder = new StringBuilder();
+        Node<E> node = getMinimumNode();
+        
+        int maximumWordLength = getMaximumWordLength();
+        
+        while (node != null) {
+            String str = 
+                    String.format(
+                            "%+" + (maximumWordLength + 1) + "s", 
+                            node.element.toString());
+            
+            stringBuilder.append(str)
+                         .append(", w = ")
+                         .append(node.getWeight())
+                         .append(", p = ")
+                         .append(node.getWeight() / totalWeight)
+                         .append("\n");
+            
+            node = getSuccessorOf(node);
+        }
+        
+        return stringBuilder.toString();
+    }
+    
+    private int getMaximumWordLength() {
+        int maximumWordLength = 0;
+        Node<E> node = getMinimumNode();
+        
+        while (node != null) {
+            maximumWordLength = 
+                    Math.max(
+                            maximumWordLength, 
+                            node.getElement().toString().length());
+            
+            node = getSuccessorOf(node);
+        }
+        
+        return maximumWordLength;
+    }
+    
+    private Node<E> getMinimumNode() {
+        if (isEmpty()) {
+            return null;
+        }
+        
+        Node<E> node = root;
+        
+        while (node.getLeftChild() != null) {
+            node = node.getLeftChild();
+        }
+        
+        return node;
+    }
+    
+    private Node<E> getMinimumNode(Node<E> node) {
+        while (node.getLeftChild() != null) {
+            node = node.getLeftChild();
+        }
+        
+        return node;
+    }
+    
+    private Node<E> getSuccessorOf(Node<E> node) {
+        if (node.getRightChild() != null) {
+            return getMinimumNode(node.getRightChild());
+        }
+        
+        Node<E> parent = node.getParent();
+        
+        while (parent != null && parent.getLeftChild() == node) {
+            node = parent;
+            parent = parent.getParent();
+        }
+        
+        return parent;
+    }
+    
     private void bypassLeafNode(Node<E> leafNodeToBypass, 
                                 Node<E> newNode) {
         Node<E> relayNode = new Node<>(leafNodeToBypass.getWeight());
@@ -257,23 +362,28 @@ extends AbstractProbabilityDistribution<E> {
             node = node.getParent();
         }
     }
-     
-    public static void main(String[] args) {
-        AbstractProbabilityDistribution<Integer> pd = 
-                new BinaryTreeProbabilityDistribution<>();
- 
-        pd.addElement(0, 1.0);
-        pd.addElement(1, 1.0);
-        pd.addElement(2, 1.0);
-        pd.addElement(3, 3.0);
- 
-        int[] counts = new int[4];
- 
-        for (int i = 0; i < 1000; ++i) {
-            Integer myint = pd.sampleElement();
-            counts[myint]++;
+
+    private void checkWeightNotNaNAndIsPositive(double weight) {
+        if (Double.isNaN(weight)) {
+            throw new IllegalArgumentException("The element weight is NaN.");
         }
  
-        System.out.println(Arrays.toString(counts));
+        if (weight <= 0.0) {
+            throw new IllegalArgumentException(
+                    "The element weight must be positive. Received " + weight);
+        }
+ 
+        if (Double.isInfinite(weight)) {
+            // Once here, 'weight' is positive infinity.
+            throw new IllegalArgumentException(
+                    "The element weight is infinite.");
+        }
+    }
+ 
+    private void checkNotEmpty(int size) {
+        if (size == 0) {
+            throw new IllegalStateException(
+                    "This probability distribution is empty.");
+        }
     }
 }

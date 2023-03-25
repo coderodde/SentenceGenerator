@@ -1,8 +1,9 @@
 package com.github.coderodde.ai.sentencegenerator.impl;
 
-import com.github.coderodde.ai.sentencegenerator.AbstractProbabilityDistribution;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
  *
@@ -12,9 +13,11 @@ public final class DirectedWordGraphNode
         implements Comparable<DirectedWordGraphNode> {
     
     private final String word;
-    private final AbstractProbabilityDistribution<DirectedWordGraphNode>
+    private final BinaryTreeProbabilityDistribution<DirectedWordGraphNode>
             probabilityDistribution = 
             new BinaryTreeProbabilityDistribution();
+    
+    private final Set<DirectedWordGraphNode> children = new HashSet<>();
     
     private final Map<DirectedWordGraphNode, Integer> parentMap = 
             new HashMap<>();
@@ -27,6 +30,14 @@ public final class DirectedWordGraphNode
         return word;
     }
     
+    public Set<DirectedWordGraphNode> getChildren() {
+        return children;
+    }
+    
+    public double getWeight(DirectedWordGraphNode node) {
+        return node.getWeight(this);
+    }
+    
     public void connectToParent(DirectedWordGraphNode parentNode) {
         if (!parentMap.containsKey(parentNode)) {
             parentMap.put(parentNode, 1);
@@ -35,15 +46,15 @@ public final class DirectedWordGraphNode
                     parentNode, 
                     parentMap.get(parentNode) + 1);
         }
+        
+        parentNode.children.add(this);
     }
     
     public void computeProbabilityDistribution() {
-        int totalNumberOfLinks = countTotalNumberOfLinks();
-        
         for (Map.Entry<DirectedWordGraphNode, Integer> entry
                 : parentMap.entrySet()) {
             
-            double weight = (1.0 * entry.getValue()) / totalNumberOfLinks;
+            double weight = (1.0) * entry.getValue();
             probabilityDistribution.addElement(entry.getKey(), weight);
         }
     }
@@ -54,6 +65,11 @@ public final class DirectedWordGraphNode
         }
         
         return probabilityDistribution.sampleElement();
+    }
+    
+    public BinaryTreeProbabilityDistribution<DirectedWordGraphNode> 
+        getProbabilityDistribution() {
+        return probabilityDistribution;
     }
     
     @Override
@@ -75,15 +91,5 @@ public final class DirectedWordGraphNode
     @Override
     public int compareTo(DirectedWordGraphNode o) {
         return word.compareTo(o.word);
-    }
-    
-    private int countTotalNumberOfLinks() {
-        int count = 0;
-        
-        for (Integer i : parentMap.values()) {
-            count += i;
-        }
-        
-        return count;
     }
 }

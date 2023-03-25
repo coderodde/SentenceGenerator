@@ -1,13 +1,13 @@
 package com.github.coderodde.ai.sentencegenerator;
 
 import com.github.coderodde.ai.sentencegenerator.WordGraphBuilder.Data;
-import com.github.coderodde.ai.sentencegenerator.cmd.AbstractCommand;
-import com.github.coderodde.ai.sentencegenerator.cmd.impl.GenerateRandomSentenceCommand;
-import com.github.coderodde.ai.sentencegenerator.cmd.impl.ListWordRangeCommand;
+import com.github.coderodde.ai.sentencegenerator.impl.BinaryTreeProbabilityDistribution;
 import com.github.coderodde.ai.sentencegenerator.impl.DirectedWordGraphNode;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 
 /**
@@ -22,21 +22,9 @@ public final class SentenceGenerator {
         private static final String GET_NUMBER_OF_SENTENCES = "sentences";
         private static final String LIST_ALL_WORDS          = "list";
         private static final String LIST_WORD_RANGE         = "range";
+        private static final String WORD_STAT               = "stat";
         private static final String QUIT                    = "quit";
     }
-    
-    private static final class Commands {
-        private final AbstractCommand generateRandomSentenceCommand;
-        private final AbstractCommand listWordRangeCommand;
-        
-        Commands(AbstractCommand generateRandomSentence,
-                 AbstractCommand listWordRange) {
-            generateRandomSentenceCommand = generateRandomSentence;
-            listWordRangeCommand = listWordRange;
-        }
-    }
-    
-    private static Commands commands;
     
     public static void main(String[] args) {
         if (args.length != 1) {
@@ -78,16 +66,6 @@ public final class SentenceGenerator {
                 "Total preprocessing took " 
                         + totalPreprocessingDuration 
                         + " ms.");
-        
-        
-        
-        commands = new Commands(
-                new GenerateRandomSentenceCommand(
-                        data.graph, 
-                        data.graphMap,
-                        data.initialWords),
-                new ListWordRangeCommand(data.graph));
-        
         repl(data);
     }
     
@@ -115,6 +93,8 @@ public final class SentenceGenerator {
             } else if (cmdString.startsWith(
                     CommandNames.LIST_WORD_RANGE)) {
                 processCommandListWordRange(cmdString, data.graph);
+            } else if (cmdString.startsWith(CommandNames.WORD_STAT)) {
+                processShowNodeStats(cmdString, data.graphMap);
             } else if (cmdString.startsWith(CommandNames.QUIT)) {
                 processCommandQuit();
             } else {
@@ -128,7 +108,40 @@ public final class SentenceGenerator {
         processCommandGenerateSentence(
                 String cmd,
                 Data data) {
-        commands.generateRandomSentenceCommand.process(cmd);
+            String[] lineParts = cmd.trim().split("\\s+");
+        
+        if (!isWithinRange(lineParts.length, 1, 2)) {
+            System.out.println(
+                    "Warning: Command \"" + cmd + "\" not recognized.");
+            return;
+        }
+        
+        String commandWord2 = lineParts.length > 1 ? lineParts[1] : null;
+        
+        int maximumSentenceLength = 
+                commandWord2 != null ?
+                Integer.parseInt(commandWord2) : 
+                Integer.MAX_VALUE; 
+        
+        int currentSentenceLength = 1;
+        
+        DirectedWordGraphNode node = data.graphMap.get(".");
+        List<DirectedWordGraphNode> path = new ArrayList<>();
+        path.add(node);
+        
+        while (currentSentenceLength < maximumSentenceLength) {
+            node = node.sampleParent();
+            
+            if (node == null) {
+                break;
+            }
+            
+            path.add(node);
+            currentSentenceLength++;
+        }
+        
+        Collections.<DirectedWordGraphNode>reverse(path);
+        print(path);
     }
         
     private static void 
@@ -160,11 +173,122 @@ public final class SentenceGenerator {
         processCommandListWordRange(
                 String cmd,
                 List<DirectedWordGraphNode> graph) {
-        commands.listWordRangeCommand.process(cmd);
+            
+        String[] parts = cmd.trim().split("\\s+");
+        
+        if (!isWithinRange(parts.length, 2, 3)) {
+            System.out.println("Command \"" + cmd + "\" could not be parsed.");
+            return;
+        }
+        
+        int index1;
+        int index2;
+        
+        try {
+            index1 = Integer.parseInt(parts[1]);
+        } catch (NumberFormatException ex) {
+            System.out.println(parts[1] + " is not an index expression.");
+            return;
+        }
+        
+        if (!isWithinRange(index1, 0, graph.size() - 1)) {
+            System.out.println(
+                    "Index " 
+                            + index1
+                            + " is not within bounds: " 
+                            + index1
+                            + ", words: " 
+                            + graph.size() 
+                            + ".");
+            return;
+        }
+        
+        if (parts.length == 2) {
+            System.out.println(graph.get(index1).getWord());
+            return;
+        }
+        
+        try {
+            index2 = Integer.parseInt(parts[2]);
+        } catch (NumberFormatException ex) {
+            System.out.println(parts[2] + " is not an index expression.");
+            return;
+        }
+        
+        if (!isWithinRange(index2, 0, graph.size() - 1)) {
+            System.out.println(
+                    "Index " 
+                            + index1
+                            + " is not within bounds: " 
+                            + index1
+                            + ", words: " 
+                            + graph.size() 
+                            + ".");
+            return;
+        }
+        
+        if (index1 > index2) {
+            System.out.println(">>> Indices are reversed.");
+            return;
+        }
+        
+        for (int i = index1; i <= index2; i++) {
+            System.out.println(graph.get(i));
+        }
+    }
+        
+    private static void 
+        processShowNodeStats(
+                String cmd, 
+                Map<String, DirectedWordGraphNode> graphMap) {
+            
+        String[] parts = cmd.split("\\s+");
+        String word = parts[1];
+        DirectedWordGraphNode node = graphMap.get(word);
+        
+        if (node == null) {
+            System.out.println("\"" + word + "\": no such word.");
+            return;
+        }
+        
+        BinaryTreeProbabilityDistribution<DirectedWordGraphNode> 
+                probabilityDistribution = node.getProbabilityDistribution();
+        
+        System.out.println("Outgoing word arcs:");
+        
+        for (DirectedWordGraphNode child : node.getChildren()) {
+            System.out.println(
+                    child.getProbabilityDistribution()
+                           .getEntryString(node));
+        }
+        
+        System.out.println("Incoming word arcs:");
+        System.out.println(probabilityDistribution.toString());
     }
         
     private static void processCommandQuit() {
         System.out.println(">>> Bye!");
         System.exit(0);
+    }
+    
+    private static boolean isWithinRange(int value, int min, int max) {
+        return !(value < min || value > max);
+    }
+    
+    private static void print(List<DirectedWordGraphNode> path) {
+        DirectedWordGraphNode node = path.get(0);
+        
+        StringBuilder stringBuilder = 
+                new StringBuilder()
+                .append(Character.toUpperCase(
+                        node.getWord().charAt(0)))
+                .append(node.getWord().substring(1));
+        
+        for (int i = 1; i < path.size(); i++) {
+            stringBuilder.append(" ")
+                         .append(path.get(i).getWord());
+        }
+        
+        System.out.println(">>> " + stringBuilder.toString());
     }
 }
