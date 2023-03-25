@@ -3,10 +3,8 @@ package com.github.coderodde.ai.sentencegenerator;
 import com.github.coderodde.ai.sentencegenerator.impl.DirectedWordGraphNode;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  *
@@ -43,9 +41,9 @@ public final class WordGraphBuilder {
         int numberOfWords = 0;
         
         for (List<String> sentence : sentenceList) {
+            numberOfWords += sentence.size();
+            
             for (String word : sentence) {
-                numberOfWords++;
-                
                 if (!nodeMap.containsKey(word)) {
                     numberOfDistinctWords++;
                     

@@ -112,7 +112,7 @@ public final class SentenceGenerator {
         
         if (!isWithinRange(lineParts.length, 1, 2)) {
             System.out.println(
-                    "Warning: Command \"" + cmd + "\" not recognized.");
+                    ">>> Warning: Command \"" + cmd + "\" not recognized.");
             return;
         }
         
@@ -251,19 +251,63 @@ public final class SentenceGenerator {
             return;
         }
         
-        BinaryTreeProbabilityDistribution<DirectedWordGraphNode> 
-                probabilityDistribution = node.getProbabilityDistribution();
+        System.out.println("--- Outgoing word arcs:");
         
-        System.out.println("Outgoing word arcs:");
+        BinaryTreeProbabilityDistribution.FieldLengths fieldLengths = 
+                node.getChildProbabilityDistribution().getFieldLengths();
         
-        for (DirectedWordGraphNode child : node.getChildren()) {
+        List<DirectedWordGraphNode> children = 
+                new ArrayList<>(node.getChildren());
+        
+        Collections.<DirectedWordGraphNode>sort(children);
+        
+        String fmt =
+                "%-" 
+                + (fieldLengths.maximumWordLength + 1) 
+                + "s, w = %" 
+                + (fieldLengths.maximumWeightLength + 1) 
+                + "f, p = %f";
+        
+        for (DirectedWordGraphNode child : children) {
             System.out.println(
-                    child.getProbabilityDistribution()
-                           .getEntryString(node));
+                    String.format(
+                            fmt, 
+                            child.getWord(), 
+                            child.getChildWeight(node),
+                            child.getParentProbabilityDistribution()
+                                     .getProbability(node)));
         }
         
-        System.out.println("Incoming word arcs:");
-        System.out.println(probabilityDistribution.toString());
+        children.clear();
+        
+        System.out.println("--- Incoming word arcs:");
+        
+        fieldLengths = node.getParentProbabilityDistribution()
+                           .getFieldLengths();
+        
+        List<DirectedWordGraphNode> parents =
+                new ArrayList<>(node.getParents()); 
+        
+        Collections.<DirectedWordGraphNode>sort(parents);
+        
+        fmt =
+                "%" 
+                + (fieldLengths.maximumWordLength + 1) 
+                + "s, w = %" 
+                + (fieldLengths.maximumWeightLength + 1) 
+                + "f, p = %f";
+        
+        for (DirectedWordGraphNode parent : parents) {
+            System.out.println(
+                    String.format(
+                            fmt, 
+                            parent.getWord(),
+                            parent.getParentWeight(node),
+                            parent.getChildProbabilityDistribution()
+                                     .getProbability(node)));
+        }
+        
+        parents.clear();
     }
         
     private static void processCommandQuit() {

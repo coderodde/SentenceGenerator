@@ -10,7 +10,7 @@ import java.util.List;
  *
  * @author Potilaskone
  */
-public class SentenceProducer {
+public final class SentenceProducer {
     
     private static final String SPLIT_REGEX = "\\s*(\\.|\\?|;|!|—)\\s*";
     

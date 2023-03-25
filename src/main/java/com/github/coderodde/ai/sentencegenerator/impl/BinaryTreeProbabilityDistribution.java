@@ -5,19 +5,29 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Random;
  
-public class BinaryTreeProbabilityDistribution<E> {
+public class BinaryTreeProbabilityDistribution {
  
-    private static final class Node<E> {
+    public static final class FieldLengths {
+        public final int maximumWordLength;
+        public final int maximumWeightLength;
+        
+        private FieldLengths(int maximumWordLength, int maximumWeightLength) {
+            this.maximumWordLength = maximumWordLength;
+            this.maximumWeightLength = maximumWeightLength;
+        }
+    }
+    
+    private static final class Node {
  
-        private final E element;
+        private final DirectedWordGraphNode element;
         private double weight;
         private final boolean isRelayNode;
-        private Node<E> leftChild;
-        private Node<E> rightChild;
-        private Node<E> parent;
+        private Node leftChild;
+        private Node rightChild;
+        private Node parent;
         private int numberOfLeafNodes;
  
-        Node(E element, double weight) {
+        Node(DirectedWordGraphNode element, double weight) {
             this.element           = element;
             this.weight            = weight;
             this.numberOfLeafNodes = 1;
@@ -42,7 +52,7 @@ public class BinaryTreeProbabilityDistribution<E> {
                        + element + ")";
         }
  
-        E getElement() {
+        DirectedWordGraphNode getElement() {
             return element;
         }
  
@@ -62,27 +72,27 @@ public class BinaryTreeProbabilityDistribution<E> {
             this.numberOfLeafNodes = numberOfLeaves;
         }
  
-        Node<E> getLeftChild() {
+        Node getLeftChild() {
             return leftChild;
         }
  
-        void setLeftChild(Node<E> block) {
+        void setLeftChild(Node block) {
             this.leftChild = block;
         }
  
-        Node<E> getRightChild() {
+        Node getRightChild() {
             return rightChild;
         }
  
-        void setRightChild(Node<E> block) {
+        void setRightChild(Node block) {
             this.rightChild = block;
         }
  
-        Node<E> getParent() {
+        Node getParent() {
             return parent;
         }
  
-        void setParent(Node<E> block) {
+        void setParent(Node block) {
             this.parent = block;
         }
  
@@ -90,9 +100,9 @@ public class BinaryTreeProbabilityDistribution<E> {
             return isRelayNode;
         }
     }
- 
-    private final Map<E, Node<E>> map = new HashMap<>();
-    private Node<E> root;
+    
+    private final Map<DirectedWordGraphNode, Node> map = new HashMap<>();
+    private Node root;
     private double totalWeight;
     private final Random random;
     
@@ -104,12 +114,12 @@ public class BinaryTreeProbabilityDistribution<E> {
         this.random = random;
     }
  
-    public boolean addElement(E element, double weight) {
+    public boolean addElement(DirectedWordGraphNode element, double weight) {
         checkWeightNotNaNAndIsPositive(weight);
-        Node<E> node = map.get(element);
+        Node node = map.get(element);
          
         if (node == null) {
-            node = new Node<>(element, weight);
+            node = new Node(element, weight);
             insert(node);
             map.put(element, node);
         } else {
@@ -121,14 +131,14 @@ public class BinaryTreeProbabilityDistribution<E> {
         return true;
     }
  
-    public boolean contains(E element) {
+    public boolean contains(DirectedWordGraphNode element) {
         return map.containsKey(element);
     }
  
-    public E sampleElement() {
+    public DirectedWordGraphNode sampleElement() {
         checkNotEmpty(map.size());
         double value = totalWeight * random.nextDouble();
-        Node<E> node = root;
+        Node node = root;
  
         while (node.isRelayNode()) {
             if (value < node.getLeftChild().getWeight()) {
@@ -146,8 +156,8 @@ public class BinaryTreeProbabilityDistribution<E> {
         return totalWeight;
     }
     
-    public double getWeight(E element) {
-        Node<E> node = map.get(element);
+    public double getWeight(DirectedWordGraphNode element) {
+        Node node = map.get(element);
         
         if (node == null) {
             throw new NoSuchElementException(
@@ -156,9 +166,20 @@ public class BinaryTreeProbabilityDistribution<E> {
         
         return node.getWeight();
     }
+    
+    public double getProbability(DirectedWordGraphNode element) {
+        Node node = map.get(element);
+        
+        if (node == null) {
+            throw new NoSuchElementException(
+                    "The input element not found in the distribution.");
+        }
+        
+        return node.getWeight() / totalWeight;
+    }
      
-    public boolean removeElement(E element) {
-        Node<E> node = map.remove(element);
+    public boolean removeElement(DirectedWordGraphNode element) {
+        Node node = map.remove(element);
  
         if (node == null) {
             return false;
@@ -183,8 +204,34 @@ public class BinaryTreeProbabilityDistribution<E> {
         return map.size();
     }
     
-    public String getEntryString(E element) {
-        Node<E> node = map.get(element);
+    public FieldLengths getFieldLengths() {
+        int maximumWordLength = 0;
+        int maximumWeightLength = 0;
+        
+        for (Node node = getMinimumNode();
+                node != null; 
+                node = getSuccessorOf(node)) {
+            
+            if (node.getElement() == null) {
+                System.out.println("YES!");
+            }
+            
+            String word = node.getElement().getWord();
+            double weight = node.getWeight();
+            
+            int wordLength = word.length();
+            int weightLength = Double.toString(weight).length();
+            
+            maximumWordLength = Math.max(maximumWordLength, wordLength);
+            maximumWeightLength = Math.max(maximumWeightLength, weightLength);
+        }
+        
+        return new FieldLengths(maximumWordLength, 
+                                maximumWeightLength);
+    }
+    
+    public String getEntryString(DirectedWordGraphNode element) {
+        Node node = map.get(element);
         
         if (node == null) {
             return null;
@@ -200,55 +247,41 @@ public class BinaryTreeProbabilityDistribution<E> {
         
         return stringBuilder.toString();
     }
+    
+    
      
-    @Override
-    public String toString() {
-        StringBuilder stringBuilder = new StringBuilder();
-        Node<E> node = getMinimumNode();
-        
-        int maximumWordLength = getMaximumWordLength();
-        
-        while (node != null) {
-            String str = 
-                    String.format(
-                            "%+" + (maximumWordLength + 1) + "s", 
-                            node.element.toString());
-            
-            stringBuilder.append(str)
-                         .append(", w = ")
-                         .append(node.getWeight())
-                         .append(", p = ")
-                         .append(node.getWeight() / totalWeight)
-                         .append("\n");
-            
-            node = getSuccessorOf(node);
-        }
-        
-        return stringBuilder.toString();
-    }
+//    @Override
+//    public String toString() {
+//        StringBuilder stringBuilder = new StringBuilder();
+//        Node node = getMinimumNode();
+//        
+//        int maximumWordLength = getMaximumWordLength();
+//        
+//        while (node != null) {
+//            String str = 
+//                    String.format(
+//                            "%+" + (maximumWordLength + 1) + "s", 
+//                            node.element.toString());
+//            
+//            stringBuilder.append(str)
+//                         .append(", w = ")
+//                         .append(node.getWeight())
+//                         .append(", p = ")
+//                         .append(node.getWeight() / totalWeight)
+//                         .append("\n");
+//            
+//            node = getSuccessorOf(node);
+//        }
+//        
+//        return stringBuilder.toString();
+//    }
     
-    private int getMaximumWordLength() {
-        int maximumWordLength = 0;
-        Node<E> node = getMinimumNode();
-        
-        while (node != null) {
-            maximumWordLength = 
-                    Math.max(
-                            maximumWordLength, 
-                            node.getElement().toString().length());
-            
-            node = getSuccessorOf(node);
-        }
-        
-        return maximumWordLength;
-    }
-    
-    private Node<E> getMinimumNode() {
+    private Node getMinimumNode() {
         if (isEmpty()) {
             return null;
         }
         
-        Node<E> node = root;
+        Node node = root;
         
         while (node.getLeftChild() != null) {
             node = node.getLeftChild();
@@ -257,7 +290,7 @@ public class BinaryTreeProbabilityDistribution<E> {
         return node;
     }
     
-    private Node<E> getMinimumNode(Node<E> node) {
+    private Node getMinimumNode(Node node) {
         while (node.getLeftChild() != null) {
             node = node.getLeftChild();
         }
@@ -265,14 +298,14 @@ public class BinaryTreeProbabilityDistribution<E> {
         return node;
     }
     
-    private Node<E> getSuccessorOf(Node<E> node) {
+    private Node getSuccessorOf(Node node) {
         if (node.getRightChild() != null) {
             return getMinimumNode(node.getRightChild());
         }
         
-        Node<E> parent = node.getParent();
+        Node parent = node.getParent();
         
-        while (parent != null && parent.getLeftChild() == node) {
+        while (parent != null && parent.getRightChild() == node) {
             node = parent;
             parent = parent.getParent();
         }
@@ -280,10 +313,10 @@ public class BinaryTreeProbabilityDistribution<E> {
         return parent;
     }
     
-    private void bypassLeafNode(Node<E> leafNodeToBypass, 
-                                Node<E> newNode) {
-        Node<E> relayNode = new Node<>(leafNodeToBypass.getWeight());
-        Node<E> parentOfCurrentNode = leafNodeToBypass.getParent();
+    private void bypassLeafNode(Node leafNodeToBypass, 
+                                Node newNode) {
+        Node relayNode = new Node(leafNodeToBypass.getWeight());
+        Node parentOfCurrentNode = leafNodeToBypass.getParent();
  
         relayNode.setLeftChild(leafNodeToBypass);
         relayNode.setRightChild(newNode);
@@ -304,13 +337,13 @@ public class BinaryTreeProbabilityDistribution<E> {
         updateMetadata(relayNode, newNode.getWeight(), 1);
     }
  
-    private void insert(Node<E> node) {
+    private void insert(Node node) {
         if (root == null) {
             root = node;
             return;
         }
  
-        Node<E> currentNode = root;
+        Node currentNode = root;
  
         while (currentNode.isRelayNode()) {
             if (currentNode.getLeftChild().getNumberOfLeaves() < 
@@ -324,16 +357,16 @@ public class BinaryTreeProbabilityDistribution<E> {
         bypassLeafNode(currentNode, node);
     }
  
-    private void delete(Node<E> leafToDelete) {
-        Node<E> relayNode = leafToDelete.getParent();
+    private void delete(Node leafToDelete) {
+        Node relayNode = leafToDelete.getParent();
  
         if (relayNode == null) {
             root = null;
             return;
         } 
  
-        Node<E> parentOfRelayNode = relayNode.getParent();
-        Node<E> siblingLeaf = relayNode.getLeftChild() == leafToDelete ?
+        Node parentOfRelayNode = relayNode.getParent();
+        Node siblingLeaf = relayNode.getLeftChild() == leafToDelete ?
                                     relayNode.getRightChild() :
                                     relayNode.getLeftChild();
  
@@ -353,7 +386,7 @@ public class BinaryTreeProbabilityDistribution<E> {
         updateMetadata(leafToDelete.getParent(), -leafToDelete.getWeight(), -1);
     }
  
-    private void updateMetadata(Node<E> node, 
+    private void updateMetadata(Node node, 
                                 double weightDelta, 
                                 int nodeDelta) {
         while (node != null) {
