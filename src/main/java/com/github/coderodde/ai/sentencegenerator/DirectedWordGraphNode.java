@@ -4,11 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-/**
- *
- * @author Potilaskone
- */
-public final class DirectedWordGraphNode 
+final class DirectedWordGraphNode 
         implements Comparable<DirectedWordGraphNode> {
     
     private final String word;

@@ -3,11 +3,7 @@ package com.github.coderodde.ai.sentencegenerator;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- *
- * @author Potilaskone
- */
-public final class WordProvider {
+final class WordProvider {
     
     public static List<List<String>> getWords(List<String> sentences) {
         List<List<String>> returnList =
@@ -19,7 +15,7 @@ public final class WordProvider {
             boolean addedWord = false;
             
             for (String word : words) {
-                word = cleanWord(word);
+                word = cleanWord(word.toLowerCase());
                 
                 if (word == null) {
                     continue;

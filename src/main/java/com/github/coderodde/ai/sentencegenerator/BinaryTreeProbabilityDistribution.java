@@ -5,7 +5,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Random;
  
-public class BinaryTreeProbabilityDistribution {
+final class BinaryTreeProbabilityDistribution {
  
     public static final class FieldLengths {
         public final int maximumWordLength;

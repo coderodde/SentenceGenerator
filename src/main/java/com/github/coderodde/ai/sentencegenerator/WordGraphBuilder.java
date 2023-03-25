@@ -5,11 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- *
- * @author Potilaskone
- */
-public final class WordGraphBuilder {
+final class WordGraphBuilder {
     
     public static final class Data {
         public final List<DirectedWordGraphNode> graph;

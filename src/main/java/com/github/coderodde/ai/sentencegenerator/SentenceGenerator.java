@@ -8,11 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 
-/**
- *
- * @author Potilaskone
- */
-public final class SentenceGenerator {
+final class SentenceGenerator {
 
     private static final class CommandNames {
         private static final String GENERATE_SENTENCE       = "gen";
@@ -265,7 +261,7 @@ public final class SentenceGenerator {
         
         String fmt =
                 "%-" 
-                + (fieldLengths.maximumWordLength + 1) 
+                + fieldLengths.maximumWordLength
                 + "s, w = %" 
                 + (fieldLengths.maximumWeightLength + 1) 
                 + "f, p = %f";
@@ -279,6 +275,7 @@ public final class SentenceGenerator {
                             child.getChildWeight(node) / totalWeight));
         }
         
+        System.out.println("Total of " + children.size() + " outgoing arcs.");
         children.clear();
         
         System.out.println("--- Incoming word arcs:");
@@ -293,7 +290,7 @@ public final class SentenceGenerator {
         
         fmt =
                 "%-" 
-                + (fieldLengths.maximumWordLength + 1) 
+                + fieldLengths.maximumWordLength
                 + "s, w = %" 
                 + (fieldLengths.maximumWeightLength + 1) 
                 + "f, p = %f";
@@ -309,6 +306,7 @@ public final class SentenceGenerator {
                             parent.getParentWeight(node) / totalWeight));
         }
         
+        System.out.println("Total of " + parents.size() + " incoming arcs.");
         parents.clear();
     }
         

@@ -6,11 +6,7 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- *
- * @author Potilaskone
- */
-public final class SentenceProducer {
+final class SentenceProducer {
     
     private static final String SPLIT_REGEX = "\\s*(\\.|\\?|;|!|—)\\s*";
     
