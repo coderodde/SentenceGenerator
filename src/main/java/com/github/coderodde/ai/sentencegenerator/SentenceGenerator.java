@@ -262,8 +262,8 @@ final class SentenceGenerator {
         String fmt =
                 "%-" 
                 + fieldLengths.maximumWordLength
-                + "s, w = %" 
-                + (fieldLengths.maximumWeightLength + 1) 
+                + "s, w = %.0" 
+                + fieldLengths.maximumWeightLength
                 + "f, p = %f";
         
         for (DirectedWordGraphNode child : children) {
@@ -291,8 +291,8 @@ final class SentenceGenerator {
         fmt =
                 "%-" 
                 + fieldLengths.maximumWordLength
-                + "s, w = %" 
-                + (fieldLengths.maximumWeightLength + 1) 
+                + "s, w = %.0" 
+                + fieldLengths.maximumWeightLength 
                 + "f, p = %f";
         
         totalWeight = node.getParentProbabilityDistribution().getTotalWeight();
