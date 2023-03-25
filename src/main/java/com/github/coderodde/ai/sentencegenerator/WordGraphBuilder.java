@@ -1,6 +1,5 @@
 package com.github.coderodde.ai.sentencegenerator;
 
-import com.github.coderodde.ai.sentencegenerator.impl.DirectedWordGraphNode;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;

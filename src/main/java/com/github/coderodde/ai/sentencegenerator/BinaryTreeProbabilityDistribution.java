@@ -1,4 +1,4 @@
-package com.github.coderodde.ai.sentencegenerator.impl;
+package com.github.coderodde.ai.sentencegenerator;
  
 import java.util.HashMap;
 import java.util.Map;
@@ -208,14 +208,7 @@ public class BinaryTreeProbabilityDistribution {
         int maximumWordLength = 0;
         int maximumWeightLength = 0;
         
-        for (Node node = getMinimumNode();
-                node != null; 
-                node = getSuccessorOf(node)) {
-            
-            if (node.getElement() == null) {
-                System.out.println("YES!");
-            }
-            
+        for (Node node : map.values()) {
             String word = node.getElement().getWord();
             double weight = node.getWeight();
             

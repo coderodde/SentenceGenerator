@@ -1,8 +1,6 @@
 package com.github.coderodde.ai.sentencegenerator;
 
 import com.github.coderodde.ai.sentencegenerator.WordGraphBuilder.Data;
-import com.github.coderodde.ai.sentencegenerator.impl.BinaryTreeProbabilityDistribution;
-import com.github.coderodde.ai.sentencegenerator.impl.DirectedWordGraphNode;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -256,6 +254,10 @@ public final class SentenceGenerator {
         BinaryTreeProbabilityDistribution.FieldLengths fieldLengths = 
                 node.getChildProbabilityDistribution().getFieldLengths();
         
+        double totalWeight = 
+                node.getChildProbabilityDistribution()
+                    .getTotalWeight();
+        
         List<DirectedWordGraphNode> children = 
                 new ArrayList<>(node.getChildren());
         
@@ -274,8 +276,7 @@ public final class SentenceGenerator {
                             fmt, 
                             child.getWord(), 
                             child.getChildWeight(node),
-                            child.getParentProbabilityDistribution()
-                                     .getProbability(node)));
+                            child.getChildWeight(node) / totalWeight));
         }
         
         children.clear();
@@ -291,11 +292,13 @@ public final class SentenceGenerator {
         Collections.<DirectedWordGraphNode>sort(parents);
         
         fmt =
-                "%" 
+                "%-" 
                 + (fieldLengths.maximumWordLength + 1) 
                 + "s, w = %" 
                 + (fieldLengths.maximumWeightLength + 1) 
                 + "f, p = %f";
+        
+        totalWeight = node.getParentProbabilityDistribution().getTotalWeight();
         
         for (DirectedWordGraphNode parent : parents) {
             System.out.println(
@@ -303,8 +306,7 @@ public final class SentenceGenerator {
                             fmt, 
                             parent.getWord(),
                             parent.getParentWeight(node),
-                            parent.getChildProbabilityDistribution()
-                                     .getProbability(node)));
+                            parent.getParentWeight(node) / totalWeight));
         }
         
         parents.clear();

@@ -1,4 +1,4 @@
-package com.github.coderodde.ai.sentencegenerator.impl;
+package com.github.coderodde.ai.sentencegenerator;
 
 import java.util.HashMap;
 import java.util.Map;
